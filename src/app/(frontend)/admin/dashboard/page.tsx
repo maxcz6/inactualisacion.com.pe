@@ -97,7 +97,7 @@ export default function AdminDashboardPage() {
               href="/admin/certificados"
               className="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white text-xs font-semibold py-2 px-3.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5"
             >
-              <span>Padrón</span>
+              <span>Ver Registro</span>
             </Link>
           </div>
         </div>
@@ -163,18 +163,18 @@ export default function AdminDashboardPage() {
               href="/admin/certificados"
               className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-semibold"
             >
-              Ver padrón completo
+              Ver registro completo →
             </Link>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[480px]">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   <th className="py-3 px-5">DNI</th>
-                  <th className="py-3 px-5">Nombre</th>
-                  <th className="py-3 px-5">Condición</th>
-                  <th className="py-3 px-5">Código</th>
+                  <th className="py-3 px-5">Estudiante</th>
+                  <th className="py-3 px-5">Condición / Especialidad</th>
+                  <th className="py-3 px-5">N° Registro</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
