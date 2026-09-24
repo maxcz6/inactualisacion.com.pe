@@ -15,6 +15,7 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
   const [contenido, setContenido] = useState("");
   const [tamano, setTamano] = useState<number>(600); // 600px alta calidad
   const [incluirLogo, setIncluirLogo] = useState(true);
+  const [estiloQR, setEstiloQR] = useState<"elegante" | "clasico">("elegante");
   const [modo, setModo] = useState<"url" | "codigo" | "personalizado">("url");
 
   // Al abrir, generar el contenido inicial según el participante
@@ -122,6 +123,8 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
     if (!ctx) return;
 
     try {
+      const isClasico = estiloQR === "clasico";
+      
       // Generar matriz de módulos con nivel de error 'H' (30% redundancia)
       const qr = QRCode.create(contenido, { errorCorrectionLevel: "H" });
       const numModules = qr.modules.size;
@@ -134,7 +137,7 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
       canvas.width = tamano;
       canvas.height = tamano;
 
-      const darkColor = "#0f172a"; // slate-900 elegante
+      const darkColor = isClasico ? "#000000" : "#0f172a"; // Negro puro para clásico, slate-900 para elegante
       const lightColor = "#ffffff";
 
       // 1. Fondo blanco limpio
@@ -173,39 +176,52 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
           }
 
           if (qr.modules.get(r, c)) {
-            // Dibujar módulo oscuro ligeramente redondeado
+            // Dibujar módulo
             ctx.beginPath();
-            if (typeof ctx.roundRect === "function") {
-              ctx.roundRect(mx, my, cellSize + 0.35, cellSize + 0.35, cellSize * 0.25);
-            } else {
+            if (isClasico) {
               ctx.rect(mx, my, cellSize + 0.35, cellSize + 0.35);
+            } else {
+              if (typeof ctx.roundRect === "function") {
+                ctx.roundRect(mx, my, cellSize + 0.35, cellSize + 0.35, cellSize * 0.25);
+              } else {
+                ctx.rect(mx, my, cellSize + 0.35, cellSize + 0.35);
+              }
             }
             ctx.fill();
           }
         }
       }
 
-      // 3. Dibujar Finder Patterns (Ojos con una esquina cuadrada apuntando al centro)
+      // 3. Dibujar Finder Patterns (Ojos)
       const drawFinderPattern = (ctx: CanvasRenderingContext2D, x: number, y: number, cellSize: number, darkColor: string, lightColor: string, sharpCorner: 'TL' | 'TR' | 'BL' | 'BR') => {
         const outerSize = 7 * cellSize;
         const midSize = 5 * cellSize;
         const innerSize = 3 * cellSize;
         
-        ctx.fillStyle = darkColor;
-        drawCustomCornerRect(ctx, x, y, outerSize, outerSize * 0.3, sharpCorner);
-        
-        ctx.fillStyle = lightColor;
-        drawCustomCornerRect(ctx, x + cellSize, y + cellSize, midSize, midSize * 0.24, sharpCorner);
-        
-        ctx.fillStyle = darkColor;
-        drawCustomCornerRect(ctx, x + 2 * cellSize, y + 2 * cellSize, innerSize, innerSize * 0.35, sharpCorner);
+        if (isClasico) {
+          ctx.fillStyle = darkColor;
+          ctx.fillRect(x, y, outerSize, outerSize);
+          ctx.fillStyle = lightColor;
+          ctx.fillRect(x + cellSize, y + cellSize, midSize, midSize);
+          ctx.fillStyle = darkColor;
+          ctx.fillRect(x + 2 * cellSize, y + 2 * cellSize, innerSize, innerSize);
+        } else {
+          ctx.fillStyle = darkColor;
+          drawCustomCornerRect(ctx, x, y, outerSize, outerSize * 0.3, sharpCorner);
+          
+          ctx.fillStyle = lightColor;
+          drawCustomCornerRect(ctx, x + cellSize, y + cellSize, midSize, midSize * 0.24, sharpCorner);
+          
+          ctx.fillStyle = darkColor;
+          drawCustomCornerRect(ctx, x + 2 * cellSize, y + 2 * cellSize, innerSize, innerSize * 0.35, sharpCorner);
+        }
       };
 
-      // Superior-Izquierdo (apunta al centro -> BR es cuadrado)
+      // Superior-Izquierdo
       drawFinderPattern(ctx, offset, offset, cellSize, darkColor, lightColor, 'BR');
-      // Superior-Derecho (apunta al centro -> BL es cuadrado)
+      // Superior-Derecho
       drawFinderPattern(ctx, offset + (numModules - 7) * cellSize, offset, cellSize, darkColor, lightColor, 'BL');
-      // Inferior-Izquierdo (apunta al centro -> TR es cuadrado)
+      // Inferior-Izquierdo
       drawFinderPattern(ctx, offset, offset + (numModules - 7) * cellSize, cellSize, darkColor, lightColor, 'TR');
 
       // 4. Dibujar Emblema / Logo Central
@@ -214,7 +230,11 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
         const renderLogo = () => {
           ctx.save();
           ctx.beginPath();
-          ctx.ellipse(cx, cy, clearanceRx, clearanceRy, 0, 0, Math.PI * 2);
+          if (isClasico) {
+            ctx.rect(cx - clearanceRx, cy - clearanceRy, clearanceRx * 2, clearanceRy * 2);
+          } else {
+            ctx.ellipse(cx, cy, clearanceRx, clearanceRy, 0, 0, Math.PI * 2);
+          }
           ctx.fillStyle = lightColor;
           ctx.fill();
 
@@ -233,7 +253,7 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
     } catch (err) {
       console.error("Error al renderizar QR personalizado:", err);
     }
-  }, [isOpen, contenido, tamano, incluirLogo]);
+  }, [isOpen, contenido, tamano, incluirLogo, estiloQR]);
 
   if (!isOpen) return null;
 
@@ -249,6 +269,8 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
   const handleDescargarSVG = () => {
     if (!contenido) return;
     try {
+      const isClasico = estiloQR === "clasico";
+      
       const qr = QRCode.create(contenido, { errorCorrectionLevel: "H" });
       const numModules = qr.modules.size;
       const marginModules = 3;
@@ -283,7 +305,11 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
           }
 
           if (qr.modules.get(r, c)) {
-            svg += `<rect x="${mx.toFixed(2)}" y="${my.toFixed(2)}" width="${(cellSize + 0.35).toFixed(2)}" height="${(cellSize + 0.35).toFixed(2)}" rx="${(cellSize * 0.25).toFixed(2)}" fill="#0f172a"/>`;
+            if (isClasico) {
+              svg += `<rect x="${mx.toFixed(2)}" y="${my.toFixed(2)}" width="${(cellSize + 0.35).toFixed(2)}" height="${(cellSize + 0.35).toFixed(2)}" fill="#000000"/>`;
+            } else {
+              svg += `<rect x="${mx.toFixed(2)}" y="${my.toFixed(2)}" width="${(cellSize + 0.35).toFixed(2)}" height="${(cellSize + 0.35).toFixed(2)}" rx="${(cellSize * 0.25).toFixed(2)}" fill="#0f172a"/>`;
+            }
           }
         }
       }
@@ -311,10 +337,18 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
         const outerSize = 7 * cellSize;
         const midSize = 5 * cellSize;
         const inSize = 3 * cellSize;
-        let res = drawSvgCustomRect(fx, fy, outerSize, outerSize * 0.3, sharpCorner, "#0f172a");
-        res += drawSvgCustomRect(fx + cellSize, fy + cellSize, midSize, midSize * 0.24, sharpCorner, "#ffffff");
-        res += drawSvgCustomRect(fx + 2 * cellSize, fy + 2 * cellSize, inSize, inSize * 0.35, sharpCorner, "#0f172a");
-        return res;
+        
+        if (isClasico) {
+          let res = `<rect x="${fx}" y="${fy}" width="${outerSize}" height="${outerSize}" fill="#000000"/>`;
+          res += `<rect x="${fx + cellSize}" y="${fy + cellSize}" width="${midSize}" height="${midSize}" fill="#ffffff"/>`;
+          res += `<rect x="${fx + 2 * cellSize}" y="${fy + 2 * cellSize}" width="${inSize}" height="${inSize}" fill="#000000"/>`;
+          return res;
+        } else {
+          let res = drawSvgCustomRect(fx, fy, outerSize, outerSize * 0.3, sharpCorner, "#0f172a");
+          res += drawSvgCustomRect(fx + cellSize, fy + cellSize, midSize, midSize * 0.24, sharpCorner, "#ffffff");
+          res += drawSvgCustomRect(fx + 2 * cellSize, fy + 2 * cellSize, inSize, inSize * 0.35, sharpCorner, "#0f172a");
+          return res;
+        }
       };
 
       svg += drawSvgFinder(offset, offset, 'BR');
@@ -322,7 +356,11 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
       svg += drawSvgFinder(offset, offset + (numModules - 7) * cellSize, 'TR');
 
       if (incluirLogo) {
-        svg += `<ellipse cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" rx="${clearanceRx.toFixed(2)}" ry="${clearanceRy.toFixed(2)}" fill="#ffffff"/>`;
+        if (isClasico) {
+          svg += `<rect x="${(cx - clearanceRx).toFixed(2)}" y="${(cy - clearanceRy).toFixed(2)}" width="${(clearanceRx * 2).toFixed(2)}" height="${(clearanceRy * 2).toFixed(2)}" fill="#ffffff"/>`;
+        } else {
+          svg += `<ellipse cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" rx="${clearanceRx.toFixed(2)}" ry="${clearanceRy.toFixed(2)}" fill="#ffffff"/>`;
+        }
         const lx = cx - logoWidth / 2;
         const ly = cy - logoHeight / 2;
         svg += `<image href="/logo_dpw.png" x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" width="${logoWidth.toFixed(2)}" height="${logoHeight.toFixed(2)}"/>`;
@@ -463,26 +501,41 @@ export default function ModalGeneradorQR({ isOpen, onClose, participante }: Prop
             </div>
 
             {/* Ajustes de imagen */}
-            <div className="flex items-center justify-between pt-1 text-xs">
-              <label className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={incluirLogo}
-                  onChange={(e) => setIncluirLogo(e.target.checked)}
-                  className="rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 focus:ring-slate-900 w-4 h-4 cursor-pointer"
-                />
-                <span>Incluir Logo DPW al centro</span>
-              </label>
-
-              <select
-                value={tamano}
-                onChange={(e) => setTamano(Number(e.target.value))}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold cursor-pointer"
-              >
-                <option value={400}>Normal (400 px)</option>
-                <option value={600}>Alta Calidad (600 px)</option>
-                <option value={1000}>Imprenta (1000 px)</option>
-              </select>
+            <div className="flex flex-col gap-3 pt-1 text-xs">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={incluirLogo}
+                    onChange={(e) => setIncluirLogo(e.target.checked)}
+                    className="rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 focus:ring-slate-900 w-4 h-4 cursor-pointer"
+                  />
+                  <span>Incluir Logo DPW al centro</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-slate-600 dark:text-slate-400">Diseño:</span>
+                  <select
+                    value={estiloQR}
+                    onChange={(e) => setEstiloQR(e.target.value as "elegante" | "clasico")}
+                    className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold cursor-pointer"
+                  >
+                    <option value="elegante">Elegante (Redondeado)</option>
+                    <option value="clasico">Clásico (Cuadrado)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <span className="font-medium text-slate-600 dark:text-slate-400">Tamaño:</span>
+                <select
+                  value={tamano}
+                  onChange={(e) => setTamano(Number(e.target.value))}
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold cursor-pointer"
+                >
+                  <option value={400}>Normal (400 px)</option>
+                  <option value={600}>Alta Calidad (600 px)</option>
+                  <option value={1000}>Imprenta (1000 px)</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
