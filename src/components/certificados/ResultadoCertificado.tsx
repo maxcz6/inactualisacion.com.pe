@@ -8,25 +8,29 @@ interface Props {
 }
 
 export default function ResultadoCertificado({ certificados, dni }: Props) {
+  // Caso: No se encontraron registros (Alerta idéntica al original)
   if (certificados.length === 0) {
     return (
-      <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 mt-0.5">
-            <svg className="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md shadow-sm animate-in fade-in duration-300">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg
+              className="h-5 w-5 text-yellow-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
-          <div>
-            <span className="inline-block bg-rose-100 text-rose-700 text-xs px-2.5 py-0.5 rounded-full font-bold tracking-wide uppercase mb-1.5">
-              Sin registros
-            </span>
-            <h3 className="text-base font-bold text-slate-900 mb-1">Documento no encontrado</h3>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              El número de documento <strong className="font-semibold text-rose-700 font-mono bg-rose-100/60 px-1.5 py-0.5 rounded">{dni}</strong> no cuenta con certificados registrados en el padrón oficial en este momento.
-            </p>
-            <p className="text-xs text-slate-400 mt-2.5">
-              Verifique haber ingresado los dígitos correctos o consulte con el área académica.
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              No se encontraron certificados asociados al DNI/documento{" "}
+              <strong>{dni}</strong>. Por favor verifique el número e intente
+              nuevamente.
             </p>
           </div>
         </div>
@@ -34,72 +38,102 @@ export default function ResultadoCertificado({ certificados, dni }: Props) {
     );
   }
 
+  const estudiante = certificados[0];
+
   return (
-    <div className="space-y-4">
-      {certificados.map((cert, index) => (
-        <div
-          key={cert.codigo || index}
-          className="bg-white border-2 border-emerald-500/30 rounded-2xl p-6 shadow-md transition-all hover:shadow-lg"
-        >
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 mt-1">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="space-y-3 w-full">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-1 rounded-full font-bold tracking-wide uppercase">
-                  {certificados.length > 1 ? `Certificado Oficial (${index + 1} de ${certificados.length})` : "Certificado Oficial Auténtico"}
-                </span>
-                <span className="text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                  CÓDIGO: {cert.codigo}
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{cert.nombre}</h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Documento de Identidad: <span className="text-slate-800 font-semibold">{cert.dni}</span>
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div>
-                  <span className="block font-medium text-slate-400">Programa / Evento:</span>
-                  <span className="font-semibold text-slate-800 text-sm">
-                    {cert.evento?.nombre || "Capacitación y Actualización Profesional"}
-                  </span>
-                </div>
-                <div>
-                  <span className="block font-medium text-slate-400">Condición:</span>
-                  <span className="inline-block font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded mt-0.5">
-                    {cert.condicion || "Participante"}
-                  </span>
-                </div>
-                {cert.evento?.fecha_inicio && (
-                  <div>
-                    <span className="block font-medium text-slate-400">Fecha de Emisión / Periodo:</span>
-                    <span className="font-semibold text-slate-700">
-                      {cert.evento.fecha_inicio} {cert.evento.fecha_fin ? `al ${cert.evento.fecha_fin}` : ""}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <span className="block font-medium text-slate-400">Estado de Acreditación:</span>
-                  <span className="font-semibold text-emerald-600 flex items-center gap-1 mt-0.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Vigente y Registrado
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="rounded-lg border bg-white text-slate-900 shadow-md border-l-4 border-l-green-500 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Cabecera del Resultado */}
+      <div className="p-6 bg-slate-50/80 border-b border-slate-100">
+        <h3 className="text-xl font-semibold text-slate-900">
+          Resultados de la búsqueda
+        </h3>
+        <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-1.5">
+          <span>Estudiante:</span>
+          <span className="font-bold text-slate-900 text-base">
+            {estudiante.nombre}
+          </span>
+          <span className="mx-2 text-slate-300">|</span>
+          <span>DNI / Doc:</span>
+          <span className="font-semibold text-slate-800 font-mono">
+            {estudiante.dni}
+          </span>
         </div>
-      ))}
+      </div>
+
+      {/* Tabla de Certificados */}
+      <div className="p-0 overflow-x-auto">
+        <table className="w-full caption-bottom text-sm text-left">
+          <thead className="bg-slate-100/70 border-b border-slate-200/80">
+            <tr>
+              <th className="h-12 px-4 font-bold text-slate-700">
+                Curso / Diplomado
+              </th>
+              <th className="h-12 px-4 font-bold text-slate-700">
+                Condición / Especialidad
+              </th>
+              <th className="h-12 px-4 font-bold text-slate-700">Serie</th>
+              <th className="h-12 px-4 font-bold text-slate-700">
+                N° Registro
+              </th>
+              <th className="h-12 px-4 font-bold text-slate-700 text-center">
+                Estado
+              </th>
+              <th className="h-12 px-4 font-bold text-slate-700 text-right">
+                Acreditación
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {certificados.map((cert, idx) => (
+              <tr
+                key={cert.codigo || idx}
+                className="hover:bg-slate-50/60 transition-colors"
+              >
+                <td className="p-4 font-medium text-slate-900 max-w-xs">
+                  {cert.evento?.nombre || "Programa de Capacitación Profesional"}
+                </td>
+                <td className="p-4 capitalize text-slate-600">
+                  <span className="inline-block bg-rose-50 text-rose-700 border border-rose-200/60 text-xs px-2.5 py-0.5 rounded font-semibold">
+                    {cert.condicion || "Asistente"}
+                  </span>
+                </td>
+                <td className="p-4 font-mono text-xs text-slate-500">
+                  {cert.evento?.codigo_base || "INA-2025"}
+                </td>
+                <td className="p-4 font-mono text-xs font-semibold text-slate-800">
+                  {cert.codigo || "-"}
+                </td>
+                <td className="p-4 text-center font-semibold text-xs">
+                  <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Válido
+                  </span>
+                </td>
+                <td className="p-4 text-right">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-white border border-emerald-300 px-3 py-1.5 rounded-md shadow-2xs">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                      <path d="m9 15 2 2 4-4" />
+                    </svg>
+                    Certificado Oficial
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

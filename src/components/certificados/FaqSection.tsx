@@ -11,22 +11,22 @@ const faqs: FaqItem[] = [
   {
     pregunta: "¿Qué hago si no encuentro mi certificado?",
     respuesta:
-      "Verifica que hayas ingresado correctamente tu número de DNI o Carnet de Extranjería sin espacios ni guiones. Si el problema persiste, comunícate con nuestro equipo de soporte institucional a través de WhatsApp o correo electrónico para validar la emisión de tu certificado.",
+      "Verifique que el número de DNI ingresado sea correcto. Si el problema persiste, comuníquese con nuestra área académica para validar el estado de su certificación.",
   },
   {
     pregunta: "¿Qué sucede si el sistema dice que no hay resultados?",
     respuesta:
-      "Si no aparecen resultados, es posible que el certificado esté en proceso de emisión o registro en el padrón oficial. Los certificados se incorporan al sistema tras la culminación y aprobación del programa académico correspondiente.",
+      "Esto puede deberse a que el certificado aún no ha sido emitido, el pago no ha sido procesado completamente, o el número de documento no coincide con nuestros registros.",
   },
   {
     pregunta: "¿Es posible verificar un certificado con otro documento?",
     respuesta:
-      "Sí, puedes realizar la consulta ingresando tu DNI o Carnet de Extranjería con el cual te registraste al inscribirte en el curso o diplomado.",
+      "Actualmente nuestro sistema de verificación pública funciona exclusivamente con el número de DNI registrado al momento de la matrícula.",
   },
   {
     pregunta: "¿Cómo puedo corregir mis datos si aparecen errados?",
     respuesta:
-      "Si detectas algún error en tu nombre o datos de acreditación, contacta al área académica mediante nuestros canales oficiales presentando tu documento de identidad para solicitar la rectificación correspondiente.",
+      "Si nota algún error en su nombre o apellidos, por favor contáctenos inmediatamente a través de nuestros canales de atención para realizar la corrección antes de la impresión física (si aplica).",
   },
 ];
 
@@ -38,48 +38,45 @@ export default function FaqSection() {
   };
 
   return (
-    <section id="faq" className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-8">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl md:text-3xl font-bold text-rose-700">
-          Preguntas Frecuentes
-        </h2>
-        <p className="text-sm text-slate-500">
-          Encuentra respuestas rápidas a las consultas más comunes sobre la verificación de certificados.
-        </p>
-      </div>
+    <div className="space-y-8 pt-8">
+      <h2 className="text-2xl font-bold text-center text-[#be123c]">
+        Preguntas Frecuentes
+      </h2>
 
-      <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100 overflow-hidden">
+      <div className="w-full bg-white rounded-lg border border-slate-200 shadow-sm divide-y divide-slate-100 px-4">
         {faqs.map((faq, index) => {
           const isOpen = abierto === index;
           return (
-            <div key={index} className="transition-colors">
-              <button
-                type="button"
-                onClick={() => toggle(index)}
-                className="w-full flex items-center justify-between p-5 md:p-6 text-left font-semibold text-slate-800 hover:text-rose-600 transition-colors focus:outline-none"
-                aria-expanded={isOpen}
-              >
-                <span className="text-sm md:text-base pr-4">{faq.pregunta}</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`lucide lucide-chevron-down text-slate-400 transition-transform duration-200 flex-shrink-0 ${
-                    isOpen ? "rotate-180 text-rose-600" : ""
-                  }`}
+            <div key={index} className="border-b border-slate-100 last:border-b-0">
+              <h3>
+                <button
+                  type="button"
+                  onClick={() => toggle(index)}
+                  className="flex flex-1 w-full items-center justify-between py-4 text-left font-medium text-slate-800 hover:text-[#be123c] transition-all focus:outline-none"
+                  aria-expanded={isOpen}
                 >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
+                  <span>{faq.pregunta}</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400 ${
+                      isOpen ? "rotate-180 text-[#be123c]" : ""
+                    }`}
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
 
               {isOpen && (
-                <div className="px-5 md:px-6 pb-6 pt-1 text-sm text-slate-600 leading-relaxed bg-slate-50/50 border-t border-slate-50 animate-fadeIn">
+                <div className="pb-4 pt-0 text-sm text-slate-600 leading-relaxed animate-in fade-in duration-200">
                   {faq.respuesta}
                 </div>
               )}
@@ -87,6 +84,6 @@ export default function FaqSection() {
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

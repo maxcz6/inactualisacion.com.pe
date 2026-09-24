@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import ResultadoCertificado from "@/components/certificados/ResultadoCertificado";
+import FaqSection from "@/components/certificados/FaqSection";
 import type { CertificadoPublico } from "@/types/participante";
 
 type Estado = "idle" | "cargando" | "ok" | "error";
@@ -11,22 +12,12 @@ function sanitizarDocumento(valor: string): string {
 }
 
 export default function FormularioBusqueda({ total: initialTotal = 0 }: { total?: number }) {
-  const [total, setTotal] = useState(initialTotal);
   const [documento, setDocumento] = useState("");
   const [error, setError] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
-  const [certificados, setCertificados] = useState<CertificadoPublico[]>([]);
+  const [certificados, setCertificados] = useState<CertificadoPublico[] | null>(null);
   const [docBuscado, setDocBuscado] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    fetch("/api/certificados/verificar/total")
-      .then((r) => r.json())
-      .then((d) => {
-        if (typeof d.total === "number") setTotal(d.total);
-      })
-      .catch(() => {});
-  }, []);
 
   const buscar = useCallback(async () => {
     setError("");
@@ -34,12 +25,7 @@ export default function FormularioBusqueda({ total: initialTotal = 0 }: { total?
     setDocumento(valor);
 
     if (!valor) {
-      setError("Ingrese el número de DNI o Carnet de Extranjería.");
-      inputRef.current?.focus();
-      return;
-    }
-    if (valor.length < 6) {
-      setError("El documento debe tener al menos 6 caracteres.");
+      setError("Por favor ingrese un DNI o Carnet de Extranjería");
       inputRef.current?.focus();
       return;
     }
@@ -64,7 +50,7 @@ export default function FormularioBusqueda({ total: initialTotal = 0 }: { total?
 
   return (
     <div className="w-full">
-      {/* Hero Principal idéntico al original */}
+      {/* Hero Principal con fondo guinda / rose institucional */}
       <div className="relative bg-[#be123c] text-white py-12 md:py-16 overflow-hidden">
         {/* Imagen de fondo con overlay */}
         <div
@@ -247,7 +233,7 @@ export default function FormularioBusqueda({ total: initialTotal = 0 }: { total?
                       {estado === "cargando" ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                          <span>Verificando...</span>
+                          <span>Buscando...</span>
                         </>
                       ) : (
                         <>
@@ -282,36 +268,29 @@ export default function FormularioBusqueda({ total: initialTotal = 0 }: { total?
         </div>
       </div>
 
-      {/* Resultados de Búsqueda */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Contenedor central idéntico al original: Resultados + FAQ */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
         {estado === "cargando" && (
-          <div className="flex flex-col items-center justify-center py-10 space-y-3">
+          <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#be123c]" />
-            <p className="text-sm font-medium text-slate-600">Consultando padrón oficial...</p>
+            <p className="text-sm font-medium text-slate-600">Consultando certificados...</p>
           </div>
         )}
 
         {estado === "error" && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 shadow-sm">
-            <div className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div>
-                <p className="font-bold text-amber-900 text-sm">Error de conexión al consultar</p>
-                <p className="text-xs text-amber-700 mt-1">
-                  No se pudo conectar con el servidor. Intente nuevamente en unos instantes.
-                </p>
-              </div>
-            </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm">
+            <p className="text-sm text-amber-800 font-medium">
+              No se pudo acceder al padrón de certificados en este momento. Intente nuevamente.
+            </p>
           </div>
         )}
 
-        {estado === "ok" && (
-          <div className="pt-2">
-            <ResultadoCertificado certificados={certificados} dni={docBuscado} />
-          </div>
+        {estado === "ok" && certificados !== null && (
+          <ResultadoCertificado certificados={certificados} dni={docBuscado} />
         )}
+
+        {/* Sección de Preguntas Frecuentes */}
+        <FaqSection />
       </div>
     </div>
   );
