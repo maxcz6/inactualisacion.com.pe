@@ -34,6 +34,34 @@ export default function AdminEventosPage() {
     cargarEventos();
   }, []);
 
+  const abrirModalNuevo = () => {
+    setError('');
+    setNombre('');
+    setDescripcion('');
+    let nextCode = 'CURSO-001';
+    if (eventos.length > 0) {
+      let maxNum = 0;
+      let prefix = 'CURSO-';
+      eventos.forEach(ev => {
+        const match = ev.codigo_base.match(/^(.*?)-?(\d+)$/);
+        if (match) {
+          const num = parseInt(match[2], 10);
+          if (num > maxNum) {
+            maxNum = num;
+            prefix = match[1].endsWith('-') ? match[1] : match[1] + '-';
+          }
+        }
+      });
+      if (maxNum > 0) {
+        nextCode = `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
+      } else {
+        nextCode = `${eventos[0].codigo_base}-001`;
+      }
+    }
+    setCodigoBase(nextCode);
+    setModalAbierto(true);
+  };
+
   const handleCrear = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -57,7 +85,7 @@ export default function AdminEventosPage() {
       setDescripcion("");
       setGuardando(false);
       setModalAbierto(false);
-      setMensaje("Evento creado exitosamente.");
+      setMensaje("Curso/Diplomado creado exitosamente.");
       cargarEventos();
     } catch {
       setError("Error de red.");
@@ -71,21 +99,21 @@ export default function AdminEventosPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Eventos y Seminarios Académicos
+              Cursos y Diplomados
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Administre las ediciones y códigos base de los certificados.
+              Administre los cursos, diplomados y sus códigos base de certificación.
             </p>
           </div>
 
           <button
-            onClick={() => setModalAbierto(true)}
+            onClick={abrirModalNuevo}
             className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span>+ Nuevo Evento</span>
+            <span>+ Nuevo Curso / Diplomado</span>
           </button>
         </div>
 
@@ -102,7 +130,7 @@ export default function AdminEventosPage() {
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <th className="py-3.5 px-6">Código Base</th>
-                <th className="py-3.5 px-6">Nombre del Evento</th>
+                <th className="py-3.5 px-6">Nombre del Curso / Diplomado</th>
                 <th className="py-3.5 px-6">Descripción</th>
                 <th className="py-3.5 px-6">Fecha Registro</th>
               </tr>
@@ -111,13 +139,13 @@ export default function AdminEventosPage() {
               {loading ? (
                 <tr>
                   <td colSpan={4} className="py-10 text-center text-slate-400">
-                    Cargando eventos...
+                    Cargando cursos y diplomados...
                   </td>
                 </tr>
               ) : eventos.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-10 text-center text-slate-400">
-                    No hay eventos registrados aún.
+                    No hay cursos ni diplomados registrados aún.
                   </td>
                 </tr>
               ) : (
@@ -148,7 +176,7 @@ export default function AdminEventosPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full overflow-hidden">
             <div className="bg-slate-900 dark:bg-black px-6 py-4 flex items-center justify-between text-white border-b border-slate-800">
-              <h3 className="text-base font-bold text-slate-100">Crear Nuevo Evento</h3>
+              <h3 className="text-base font-bold text-slate-100">Agregar Curso / Diplomado</h3>
               <button onClick={() => setModalAbierto(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
 
@@ -175,7 +203,7 @@ export default function AdminEventosPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                  Nombre del Evento: *
+                  Nombre del Curso / Diplomado: *
                 </label>
                 <input
                   type="text"
