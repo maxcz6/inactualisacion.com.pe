@@ -54,19 +54,19 @@ export default function Header() {
         <div className="hidden lg:flex pl-[74px] gap-x-[56px]">
           <Link
             className="text-[#36485C] font-medium hover:bg-muted hover:bg-opacity-75 group p-2 rounded-md"
-            href="https://inactualizacion.com.pe"
+            href="https://inactualizacion.com.pe/"
           >
             Inicio
           </Link>
           <Link
             className="text-[#36485C] font-medium hover:bg-muted hover:bg-opacity-75 group p-2 rounded-md"
-            href="/buscar-certificado"
+            href="https://inactualizacion.com.pe/buscar-certificado"
           >
             Validar Certificado
           </Link>
           <a
             className="text-[#36485C] font-medium hover:bg-muted hover:bg-opacity-75 group p-2 rounded-md"
-            href="https://inactualizacion.com.pe#nosotros"
+            href="https://inactualizacion.com.pe/#nosotros"
           >
             Nosotros
           </a>
@@ -78,7 +78,7 @@ export default function Header() {
           </a>
           <a
             className="text-[#36485C] font-medium hover:bg-muted hover:bg-opacity-75 group p-2 rounded-md"
-            href="#faq"
+            href="https://inactualizacion.com.pe/#faq"
           >
             Faq
           </a>
@@ -86,12 +86,12 @@ export default function Header() {
 
         {/* Botón Ingresar */}
         <div className="flex items-center gap-x-5">
-          <Link
-            href="/admin/login"
+          <a
+            href="https://inactualizacion.com.pe/api/auth/login?"
             className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#be123c] text-white hover:bg-[#be123c]/90 h-10 px-4 py-2"
           >
             Ingresar
-          </Link>
+          </a>
         </div>
       </nav>
     </div>
