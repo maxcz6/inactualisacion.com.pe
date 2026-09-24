@@ -50,9 +50,16 @@ const editFuncs = `
       setGuardando(false);
     }
   };
-`;
 
-content = content.replace(/  const handleCrear[\s\S]*?cargarEventos\(\);\n    \} catch \{\n      setError\("Error de red\."\);\n      setGuardando\(false\);\n    \}\n  \};/, editFuncs);
+  return`;
 
-fs.writeFileSync(pageFile, content, 'utf8');
-console.log('Fixed handleGuardar.');
+const startIdx = content.indexOf('  const handleCrear');
+const endIdx = content.indexOf('  return (', startIdx);
+
+if (startIdx !== -1 && endIdx !== -1) {
+    content = content.substring(0, startIdx) + editFuncs + content.substring(endIdx + '  return'.length);
+    fs.writeFileSync(pageFile, content, 'utf8');
+    console.log("Successfully replaced handleCrear with handleGuardar.");
+} else {
+    console.log("Indexes not found.");
+}

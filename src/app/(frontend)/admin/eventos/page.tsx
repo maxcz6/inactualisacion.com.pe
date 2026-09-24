@@ -78,30 +78,47 @@ export default function AdminEventosPage() {
     setModalAbierto(true);
   };
 
-  const handleCrear = async (e: React.FormEvent) => {
+
+  const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setGuardando(true);
 
     try {
-      const res = await crearEvento({
-        codigo_base: codigoBase.trim().toUpperCase(),
-        nombre: nombre.trim(),
-        descripcion: descripcion.trim() || null,
-      });
+      if (eventoEditando) {
+        const res = await actualizarEvento(eventoEditando.id, {
+          codigo_base: codigoBase.trim().toUpperCase(),
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim() || null,
+        });
 
-      if (!res.success) {
-        setError(res.error || "No se pudo crear el evento.");
-        setGuardando(false);
-        return;
+        if (!res.success) {
+          setError(res.error || "No se pudo actualizar el curso/diplomado.");
+          setGuardando(false);
+          return;
+        }
+        setMensaje("Curso/Diplomado actualizado exitosamente.");
+      } else {
+        const res = await crearEvento({
+          codigo_base: codigoBase.trim().toUpperCase(),
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim() || null,
+        });
+
+        if (!res.success) {
+          setError(res.error || "No se pudo crear el curso/diplomado.");
+          setGuardando(false);
+          return;
+        }
+        setMensaje("Curso/Diplomado creado exitosamente.");
       }
 
+      setEventoEditando(null);
       setCodigoBase("");
       setNombre("");
       setDescripcion("");
       setGuardando(false);
       setModalAbierto(false);
-      setMensaje("Curso/Diplomado creado exitosamente.");
       cargarEventos();
     } catch {
       setError("Error de red.");
