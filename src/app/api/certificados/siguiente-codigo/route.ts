@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/server/database/supabase";
 import { cookies } from "next/headers";
 import { verificarToken } from "@/lib/jwt";
+import * as eventoRepo from "@/server/repositories/evento.repository";
+import * as participanteRepo from "@/server/repositories/participante.repository";
 
 /**
  * GET /api/certificados/siguiente-codigo?evento_id=xxx
@@ -30,39 +31,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "evento_id requerido" }, { status: 400 });
     }
 
-    const db = supabase();
-
-    // 1. Obtener el codigo_base del evento
-    const { data: evento, error: eventoError } = await db
-      .from("eventos")
-      .select("codigo_base")
-      .eq("id", eventoId)
-      .maybeSingle();
-
-    if (eventoError || !evento) {
+    const evento = await eventoRepo.findById(eventoId);
+    if (!evento) {
       return NextResponse.json({ success: false, error: "Evento no encontrado" }, { status: 404 });
     }
 
-    const codigoBase = evento.codigo_base as string;
-
-    // 2. Obtener todos los códigos del evento que empiecen con codigo_base
-    const { data: participantes, error: partError } = await db
-      .from("participantes")
-      .select("codigo")
-      .eq("evento_id", eventoId)
-      .ilike("codigo", `${codigoBase}-%`);
-
-    if (partError) {
-      throw new Error(partError.message);
-    }
-
-    // 3. Extraer el número final de cada código y encontrar el máximo
-    //    Patrón esperado: CODIGO_BASE-NNN  (puede ser 3 o más dígitos)
-    const prefijo = `${codigoBase}-`;
+    const codigoBase = evento.codigo_base;
+    const codigos = await participanteRepo.findCodesByEvent(eventoId);
     let maximo = 0;
 
-    for (const p of participantes ?? []) {
-      const sufijo = (p.codigo as string).slice(prefijo.length);
+    const prefijo = `${codigoBase}-`;
+    for (const codigo of codigos) {
+      if (!codigo.startsWith(prefijo)) continue;
+      const sufijo = codigo.slice(prefijo.length);
       const num = parseInt(sufijo, 10);
       if (!isNaN(num) && num > maximo) {
         maximo = num;
@@ -80,7 +61,7 @@ export async function GET(request: NextRequest) {
         siguiente,
         codigo: codigoSugerido,
         codigo_base: codigoBase,
-        total_existentes: (participantes ?? []).length,
+        total_existentes: codigos.length,
       },
     });
   } catch (err) {

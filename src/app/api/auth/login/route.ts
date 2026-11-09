@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/server/database/supabase";
 import { loginSchema } from "@/server/validators/auth.schema";
 import { firmarToken } from "@/lib/jwt";
+import * as usuarioRepo from "@/server/repositories/usuario.repository";
+import * as credencialRepo from "@/server/repositories/credencial.repository";
+import { verifyPassword } from "@/server/auth/password";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,61 +16,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password } = parsed.data;
-    const db = supabase();
-
-    // Intentar autenticación con Supabase Auth
-    const { data: authData, error: authError } = await db.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    let perfilUsuario = null;
-
-    if (!authError && authData?.user) {
-      // Buscar el perfil en la tabla perfiles
-      const { data: perfil } = await db
-        .from("perfiles")
-        .select("*")
-        .eq("id", authData.user.id)
-        .maybeSingle();
-
-      if (perfil && !perfil.activo) {
-        return NextResponse.json(
-          { success: false, error: "Tu cuenta de administrador está inactiva" },
-          { status: 403 }
-        );
-      }
-      perfilUsuario = perfil ?? {
-        id: authData.user.id,
-        email: authData.user.email,
-        nombre: authData.user.user_metadata?.nombre ?? "Administrador",
-        rol: "admin",
-        activo: true,
-      };
-    } else {
-      // Si Supabase Auth aún no tiene el usuario o da error, verificar si existe en tabla perfiles directamente
-      const { data: perfilDirecto } = await db
-        .from("perfiles")
-        .select("*")
-        .eq("email", email.toLowerCase().trim())
-        .maybeSingle();
-
-      if (perfilDirecto && perfilDirecto.activo) {
-        perfilUsuario = perfilDirecto;
-      } else {
-        return NextResponse.json(
-          { success: false, error: authError?.message || "Credenciales incorrectas" },
-          { status: 401 }
-        );
-      }
+    const email = parsed.data.email.toLowerCase().trim();
+    const perfilUsuario = await usuarioRepo.findByEmail(email);
+    const credencial = await credencialRepo.findByEmail(email);
+    if (
+      !perfilUsuario ||
+      !perfilUsuario.activo ||
+      !credencial ||
+      !(await verifyPassword(parsed.data.password, credencial.password_salt, credencial.password_hash))
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Correo o contraseña incorrectos, o cuenta inactiva" },
+        { status: 401 }
+      );
     }
 
-    // Firmar JWT criptográfico con jose
     const token = await firmarToken({
       id: perfilUsuario.id,
       email: perfilUsuario.email,
-      nombre: perfilUsuario.nombre,
+      nombre: perfilUsuario.nombre || "Administrador",
       rol: perfilUsuario.rol === "superadmin" ? "superadmin" : "admin",
     });
 
@@ -77,7 +43,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: perfilUsuario.id,
         email: perfilUsuario.email,
-        nombre: perfilUsuario.nombre,
+        nombre: perfilUsuario.nombre || "Administrador",
         rol: perfilUsuario.rol || "admin",
       },
     });
@@ -96,7 +62,7 @@ export async function POST(request: NextRequest) {
   } catch (err: unknown) {
     console.error("[POST /api/auth/login]", err);
     return NextResponse.json(
-      { success: false, error: "Error al iniciar sesión" },
+      { success: false, error: err instanceof Error ? err.message : "Error al iniciar sesión" },
       { status: 500 }
     );
   }

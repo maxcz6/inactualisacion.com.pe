@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AdminNavbar from "@/components/layout/AdminNavbar";
 import { listarUsuarios, crearUsuario, actualizarUsuario } from "@/services/usuario.service";
 
 interface Perfil {
   id: string;
   email: string;
-  nombre: string;
+  nombre?: string | null;
   rol: "admin" | "superadmin";
   activo: boolean;
   created_at: string;
@@ -27,7 +26,6 @@ export default function AdminUsuariosPage() {
   const [rol, setRol] = useState<"admin"|"superadmin">("admin");
 
   const cargar = () => {
-    setLoading(true);
     listarUsuarios().then(d => {
       if (d.success) setUsuarios(d.data);
     }).finally(() => setLoading(false));
@@ -133,12 +131,12 @@ export default function AdminUsuariosPage() {
               {!editId && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Contraseña</label>
-                  <input required={!editId} type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={6} className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:border-indigo-500" />
+                  <input required={!editId} type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} maxLength={256} autoComplete="new-password" className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:border-indigo-500" />
                 </div>
               )}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Rol</label>
-                <select value={rol} onChange={e => setRol(e.target.value as any)} className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:border-indigo-500">
+                <select value={rol} onChange={e => setRol(e.target.value === "superadmin" ? "superadmin" : "admin")} className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:border-indigo-500">
                   <option value="admin">Administrador</option>
                   <option value="superadmin">Superadmin</option>
                 </select>

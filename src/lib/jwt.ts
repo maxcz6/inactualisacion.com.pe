@@ -8,8 +8,7 @@ import { SignJWT, jwtVerify } from "jose";
 const getJwtSecretKey = () => {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
-    // Si no está configurado, usar clave de respaldo para desarrollo
-    return new TextEncoder().encode("clave_secreta_jwt_idexsam_2026_super_segura_32_bytes");
+    throw new Error("AUTH_SECRET debe tener al menos 32 caracteres");
   }
   return new TextEncoder().encode(secret);
 };
@@ -41,8 +40,8 @@ export async function firmarToken(payload: UsuarioTokenPayload): Promise<string>
  * Retorna el payload del usuario o null si es inválido o ha expirado.
  */
 export async function verificarToken(token: string): Promise<UsuarioTokenPayload | null> {
+  const secretKey = getJwtSecretKey();
   try {
-    const secretKey = getJwtSecretKey();
     const { payload } = await jwtVerify(token, secretKey, {
       algorithms: ["HS256"],
     });
@@ -53,7 +52,7 @@ export async function verificarToken(token: string): Promise<UsuarioTokenPayload
       rol: payload.rol as "admin" | "superadmin",
       nombre: (payload.nombre as string) || null,
     };
-  } catch (error) {
+  } catch {
     // Token alterado, expirado o firma inválida
     return null;
   }

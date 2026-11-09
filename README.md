@@ -1,256 +1,72 @@
 # Validador de Certificados — IDEX SAM
 
-Sistema oficial de validación y gestión de certificados del **IESTP Santiago Antúnez de Mayolo** · PE Diseño y Programación Web.
+Aplicación Next.js para administrar eventos y participantes, y verificar certificados. Los datos se guardan en Google Sheets; el acceso se realiza desde el backend de Next.js hacia una Web App de Google Apps Script. El navegador nunca recibe la URL ni el secreto de Apps Script.
 
----
+## Pestañas y encabezados
 
-## Arquitectura
+Pega estos encabezados en la fila 1 de cada pestaña, respetando el orden y los nombres. El método `setupSheets()` del script también puede crear las pestañas y encabezados automáticamente.
 
-```
-USUARIO
-   │ HTTPS
-   ▼
-┌─────────────────────────────────────┐
-│  FRONTEND (Navegador)               │
-│  src/app/(frontend)/                │
-│  src/components/                    │
-│  • Página pública de verificación   │
-│  • Panel admin (login/dashboard)    │
-│  ❌ No conoce Supabase              │
-└──────────────┬──────────────────────┘
-               │ fetch() REST/JSON
-               ▼
-┌─────────────────────────────────────┐
-│  API  — Next.js Route Handlers      │
-│  src/app/api/                       │
-│  GET  /api/certificados/verificar   │
-│  GET  /api/certificados             │
-│  POST /api/certificados             │
-│  PUT  /api/certificados/[id]        │
-│  DELETE /api/certificados/[id]      │
-│  GET  /api/eventos                  │
-│  GET  /api/participantes            │
-│  POST /api/auth/login               │
-└──────────────┬──────────────────────┘
-               │ server-only
-               ▼
-┌─────────────────────────────────────┐
-│  BACKEND                            │
-│  src/server/services/               │
-│  src/server/repositories/           │
-│  src/server/validators/  (Zod)      │
-│  ✅ Lógica de negocio               │
-│  ✅ Acceso a Supabase               │
-└──────────────┬──────────────────────┘
-               │ HTTPS
-               ▼
-┌─────────────────────────────────────┐
-│  SUPABASE (PostgreSQL)              │
-│  eventos / participantes / perfiles │
-└─────────────────────────────────────┘
-```
+| Pestaña | Encabezados |
+|---|---|
+| `eventos` | `id`, `codigo_base`, `nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `created_at` |
+| `participantes` | `id`, `evento_id`, `dni`, `nombre`, `condicion`, `codigo`, `verificado`, `created_at` |
+| `perfiles` | `id`, `email`, `nombre`, `rol`, `activo`, `created_at`, `updated_at` |
+| `credenciales` | `id`, `email`, `password_hash`, `password_salt`, `created_at`, `updated_at` |
+| `logs` | `id`, `usuario_email`, `accion`, `detalle`, `created_at` |
 
-### Regla principal
+`perfiles` conserva los datos y roles de administrador. Las credenciales van aparte: nunca se guarda la contraseña en texto plano; la aplicación guarda un hash PBKDF2 y una sal aleatoria en `credenciales`. Los valores `id` de `perfiles` y `credenciales` deben coincidir.
 
-```
-Frontend  ──X──▶  Supabase     ← PROHIBIDO
-Frontend  ──▶  /api/...  ──▶  Backend  ──▶  Supabase   ← CORRECTO
-```
+## Configurar Apps Script
 
----
+1. Crea una hoja de cálculo y abre **Extensiones → Apps Script**.
+2. Copia el contenido de [`google-apps-script/Code.gs`](./google-apps-script/Code.gs) en `Code.gs`.
+3. En **Configuración del proyecto → Propiedades de secuencia de comandos**, agrega:
+   - `SPREADSHEET_ID`: el ID entre `/d/` y `/edit` en la URL de tu hoja.
+   - `API_SECRET`: una clave aleatoria larga. Usa el mismo valor en `APPS_SCRIPT_SECRET` de Next.js.
+4. Ejecuta `setupSheets()` una vez desde el editor y acepta los permisos solicitados.
+5. Ve a **Implementar → Nueva implementación → Aplicación web**. Selecciona **Ejecutar como: yo** y permite el acceso de **Cualquier persona** para que el servidor de Next.js pueda invocarla. El secreto `API_SECRET` protege las operaciones. Copia la URL terminada en `/exec`.
 
-## Estructura de carpetas
+El secreto se valida en cada petición. No publiques la hoja ni incluyas `API_SECRET` en variables `NEXT_PUBLIC_*`.
 
-```
-src/
-├── app/
-│   ├── (frontend)/              ← páginas públicas y admin
-│   │   ├── page.tsx             ← verificador público
-│   │   ├── verificar/
-│   │   └── admin/
-│   │       ├── login/
-│   │       ├── dashboard/
-│   │       ├── certificados/
-│   │       ├── participantes/
-│   │       └── eventos/
-│   │
-│   └── api/                     ← Route Handlers (backend)
-│       ├── certificados/
-│       │   ├── route.ts         GET lista / POST crear
-│       │   ├── [id]/route.ts    GET / PUT / DELETE
-│       │   └── verificar/
-│       │       └── route.ts     GET público por DNI
-│       ├── participantes/
-│       ├── eventos/
-│       ├── usuarios/
-│       └── auth/
-│           ├── login/
-│           └── logout/
-│
-├── components/
-│   ├── certificados/
-│   │   ├── FormularioBusqueda.tsx
-│   │   └── ResultadoCertificado.tsx
-│   └── layout/
-│       ├── Header.tsx
-│       ├── Footer.tsx
-│       └── WatermarkBg.tsx
-│
-├── server/                      ← SOLO SERVIDOR (server-only)
-│   ├── database/supabase.ts
-│   ├── repositories/
-│   │   ├── participante.repository.ts
-│   │   ├── evento.repository.ts
-│   │   └── usuario.repository.ts
-│   └── validators/
-│       ├── participante.schema.ts
-│       ├── evento.schema.ts
-│       └── auth.schema.ts
-│
-├── services/                    ← clientes HTTP del frontend
-│   ├── certificado.service.ts
-│   └── auth.service.ts
-│
-└── types/
-    ├── participante.ts
-    ├── evento.ts
-    └── perfil.ts
-```
+## Configurar la aplicación
 
----
-
-## Base de datos (Supabase / PostgreSQL)
-
-```sql
--- Eventos (seminarios, talleres, etc.)
-CREATE TABLE public.eventos (
-  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  codigo_base VARCHAR NOT NULL UNIQUE,
-  nombre      VARCHAR NOT NULL,
-  descripcion TEXT,
-  fecha_inicio DATE,
-  fecha_fin    DATE,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Participantes = certificados emitidos
-CREATE TABLE public.participantes (
-  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  evento_id  UUID REFERENCES public.eventos(id),
-  dni        VARCHAR NOT NULL,
-  nombre     VARCHAR NOT NULL,
-  condicion  VARCHAR NOT NULL CHECK (condicion IN ('Asistente','Ponente','Organizador')),
-  codigo     VARCHAR NOT NULL UNIQUE,
-  verificado BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Índices para búsquedas rápidas
-CREATE INDEX idx_participantes_dni    ON participantes(dni);
-CREATE INDEX idx_participantes_codigo ON participantes(codigo);
-
--- Perfiles de administrador (vinculados a Supabase Auth)
-CREATE TABLE public.perfiles (
-  id         UUID PRIMARY KEY REFERENCES auth.users(id),
-  email      VARCHAR NOT NULL,
-  nombre     VARCHAR,
-  rol        VARCHAR NOT NULL CHECK (rol IN ('admin','superadmin')),
-  activo     BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
-
----
-
-## Stack tecnológico
-
-| Capa       | Tecnología                        |
-|------------|-----------------------------------|
-| Framework  | Next.js 15 (App Router)           |
-| Frontend   | React 18 + TypeScript             |
-| Estilos    | Tailwind CSS v4                   |
-| API        | Next.js Route Handlers (REST)     |
-| Validación | Zod                               |
-| Seguridad  | JWT (jose HS256) + Middleware     |
-| Backend    | Services + Repositories           |
-| Base datos | Supabase (PostgreSQL)             |
-| Hosting    | Vercel                            |
-
----
-
-## Variables de entorno
-
-Copie `.env.example` como `.env.local` y rellene:
+Copia `.env.example` a `.env.local` y configura:
 
 ```env
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...          # Solo servidor — nunca NEXT_PUBLIC_
-SUPABASE_ANON_KEY=eyJ...
-AUTH_SECRET=<hex aleatorio 64 chars>
-NEXTAUTH_URL=http://localhost:3000
+APPS_SCRIPT_URL=https://script.google.com/macros/s/ID_DE_IMPLEMENTACION/exec
+APPS_SCRIPT_SECRET=el_mismo_API_SECRET_del_script
+AUTH_SECRET=un_secreto_aleatorio_de_al_menos_32_caracteres
+BOOTSTRAP_ADMIN_SECRET=un_secreto_temporal_para_crear_el_primer_superadmin
 ```
 
-> ⚠️ **Nunca** usar `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`. La SERVICE_ROLE_KEY solo vive en el servidor.
+Inicia el proyecto y crea el primer administrador. En PowerShell:
 
----
+```powershell
+$body = @{
+  secret = "el_valor_de_BOOTSTRAP_ADMIN_SECRET"
+  email = "admin@institucion.edu.pe"
+  nombre = "Administrador"
+  password = "una_contrasena_de_al_menos_8_caracteres"
+} | ConvertTo-Json
 
-## Desarrollo local
+Invoke-RestMethod -Uri "http://localhost:3000/api/auth/bootstrap" `
+  -Method Post -ContentType "application/json" -Body $body
+```
+
+El alta inicial solo está disponible mientras `perfiles` no tenga registros. Después de crear el superadmin, elimina `BOOTSTRAP_ADMIN_SECRET` de `.env.local` y de las variables de producción. Los administradores adicionales se crean desde el panel y reciben una contraseña nueva; el ingreso normal es por el formulario de correo y contraseña.
+
+Las contraseñas de Supabase Auth no se pueden recuperar ni copiar a este formato. Para migrar los datos existentes:
+
+1. Crea las pestañas y encabezados, y registra el superadmin inicial.
+2. Copia las filas de `eventos` y luego `participantes`, conservando los IDs y los valores de `evento_id`. Mantén `dni`, `codigo` e IDs como texto para evitar que Sheets cambie su formato.
+3. Crea los demás perfiles desde el panel para que cada uno tenga una contraseña nueva y segura. No copies contraseñas ni hashes de Supabase Auth.
+4. Copia las filas de `logs` si necesitas conservar el historial.
+
+## Desarrollo y despliegue
 
 ```bash
-# 1. Instalar dependencias
 npm install
-
-# 2. Configurar variables
-cp .env.example .env.local
-# Editar .env.local con sus credenciales Supabase
-
-# 3. Iniciar servidor de desarrollo
 npm run dev
 ```
 
-Abrir [http://localhost:3000](http://localhost:3000)
-
----
-
-## Despliegue en Vercel
-
-```
-GitHub
-  └── validador-certificados
-          │
-          ▼
-       Vercel
-       ├── Frontend  (SSR)
-       └── API REST  (Edge/Node)
-                │
-                ▼
-           Supabase
-           PostgreSQL
-```
-
-1. Conectar repositorio en [vercel.com](https://vercel.com)
-2. Agregar variables de entorno en **Settings → Environment Variables**
-3. Vercel detecta Next.js automáticamente → `npm run build`
-
----
-
-## Flujo de verificación pública
-
-```
-Usuario escribe DNI
-       ↓
-FormularioBusqueda.tsx  (Client Component)
-       ↓ fetch()
-GET /api/certificados/verificar?dni=12345678
-       ↓
-route.ts → valida con Zod
-       ↓
-participante.repository.ts
-       ↓ supabase.from("participantes").select(...)
-Supabase PostgreSQL
-       ↓
-JSON: { success: true, data: [...] }
-       ↓
-ResultadoCertificado.tsx  → muestra tarjetas
-```
+En Vercel, configura `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` y `AUTH_SECRET`. `BOOTSTRAP_ADMIN_SECRET` solo se necesita temporalmente para el primer superadmin. No uses la base de datos de Google Sheets para cargas de alta concurrencia: tiene cuotas y no ofrece las transacciones de una base de datos relacional.

@@ -1,5 +1,5 @@
 import "server-only";
-import { supabase } from "@/server/database/supabase";
+import { sheetRequest } from "@/server/database/google-sheets";
 
 export interface LogEntry {
   id: string;
@@ -10,29 +10,24 @@ export interface LogEntry {
 }
 
 export async function addLog(usuario_email: string, accion: string, detalle?: string): Promise<void> {
-  const db = supabase();
-  const { error } = await db.from("logs").insert([{
+  await sheetRequest<LogEntry>("insert", {
+  table: "logs",
+  data: {
+    id: crypto.randomUUID(),
     usuario_email,
     accion,
-    detalle
-  }]);
-  
-  if (error) {
-    console.error("Error saving log:", error);
-  }
+    detalle: detalle ?? null,
+    created_at: new Date().toISOString(),
+  },
+  });
 }
 
 export async function getLogs(limit: number = 50): Promise<LogEntry[]> {
-  const db = supabase();
-  const { data, error } = await db
-    .from("logs")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-    
-  if (error) {
-    console.error("Error fetching logs:", error);
-    return [];
-  }
-  return data as LogEntry[];
+  const { rows } = await sheetRequest<{ rows: LogEntry[]; total: number }>("list", {
+  table: "logs",
+  orderBy: "created_at",
+  descending: true,
+  limit,
+  });
+  return rows;
 }

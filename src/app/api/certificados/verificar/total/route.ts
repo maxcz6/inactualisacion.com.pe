@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/server/database/supabase";
+import * as participanteRepo from "@/server/repositories/participante.repository";
 
 /**
  * GET /api/certificados/verificar/total
@@ -7,15 +7,10 @@ import { supabase } from "@/server/database/supabase";
  */
 export async function GET() {
   try {
-    const db = supabase();
-    const { count, error } = await db
-      .from("participantes")
-      .select("*", { count: "exact", head: true });
-
-    if (error) throw error;
-    return NextResponse.json({ total: count ?? 0 });
+    const total = await participanteRepo.countAll();
+    return NextResponse.json({ total });
   } catch (err) {
     console.error("[/api/certificados/verificar/total]", err);
-    return NextResponse.json({ total: 0 });
+    return NextResponse.json({ success: false, error: "Error interno" }, { status: 500 });
   }
 }

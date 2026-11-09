@@ -1,56 +1,42 @@
 import "server-only";
-import { supabase } from "@/server/database/supabase";
+import { sheetRequest } from "@/server/database/google-sheets";
 import type { Evento } from "@/types/evento";
 
 export async function findAll(): Promise<Evento[]> {
-  const db = supabase();
-  const { data, error } = await db
-    .from("eventos")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Evento[];
+  const { rows } = await sheetRequest<{ rows: Evento[]; total: number }>("list", {
+    table: "eventos",
+    orderBy: "created_at",
+    descending: true,
+  });
+  return rows;
 }
 
 export async function findById(id: string): Promise<Evento | null> {
-  const db = supabase();
-  const { data, error } = await db
-    .from("eventos")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data as Evento | null;
+  const { rows } = await sheetRequest<{ rows: Evento[]; total: number }>("list", {
+    table: "eventos",
+    filters: { id },
+    limit: 1,
+  });
+  return rows[0] ?? null;
 }
 
 export async function create(input: Omit<Evento, "id" | "created_at">): Promise<Evento> {
-  const db = supabase();
-  const { data, error } = await db
-    .from("eventos")
-    .insert(input)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Evento;
+  return sheetRequest<Evento>("insert", { table: "eventos", data: input });
 }
 
 export async function update(
   id: string,
   input: Partial<Omit<Evento, "id" | "created_at">>
 ): Promise<Evento> {
-  const db = supabase();
-  const { data, error } = await db
-    .from("eventos")
-    .update(input)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Evento;
+  const updated = await sheetRequest<Evento | null>("update", {
+    table: "eventos",
+    where: { id },
+    data: input,
+  });
+  if (!updated) throw new Error("Evento no encontrado");
+  return updated;
 }
 
 export async function remove(id: string): Promise<void> {
-  const db = supabase();
-  const { error } = await db.from("eventos").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await sheetRequest<{ deleted: number }>("delete", { table: "eventos", where: { id } });
 }
